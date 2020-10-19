@@ -49,7 +49,7 @@ def main(args):
     # TODO: Predict target values on the test set
     # x_test_transpose = x_test.transpose()
     # weights_transposed = weights.transpose()
-    pprint(x_test.shape)
+    #pprint(x_test.shape)
     # pprint(weights_transposed.shape)
     prediction = x_test @ weights
     # pprint(prediction)

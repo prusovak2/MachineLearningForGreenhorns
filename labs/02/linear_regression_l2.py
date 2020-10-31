@@ -6,13 +6,15 @@ import sklearn.datasets
 import sklearn.linear_model
 import sklearn.metrics
 import sklearn.model_selection
+from sklearn.model_selection import train_test_split
+from pprint import pprint
 
 parser = argparse.ArgumentParser()
 # These arguments will be set appropriately by ReCodEx, even if you change them.
-parser.add_argument("--plot", default=False, const=True, nargs="?", type=str, help="Plot the predictions")
+parser.add_argument("--plot", default=True, const=True, nargs="?", type=str, help="Plot the predictions")
 parser.add_argument("--recodex", default=False, action="store_true", help="Running in ReCodEx")
 parser.add_argument("--seed", default=42, type=int, help="Random seed")
-parser.add_argument("--test_size", default=0.5, type=lambda x:int(x) if x.isdigit() else float(x), help="Test set size")
+parser.add_argument("--test_size", default=0.9, type=lambda x:int(x) if x.isdigit() else float(x), help="Test set size")
 # If you add more arguments, ReCodEx will keep them with your default values.
 
 def main(args):
@@ -20,8 +22,10 @@ def main(args):
     dataset = sklearn.datasets.load_boston()
 
     # TODO: Split the dataset into a train set and a test set.
-    # Use `sklearn.model_selection.train_test_split` method call, passing
-    # arguments `test_size=args.test_size, random_state=args.seed`.
+    features = dataset.data
+    target = dataset.target
+    x_train, x_test, y_train, y_test = train_test_split(features, target, test_size=args.test_size,
+                                                        random_state=args.seed)
 
     lambdas = np.geomspace(0.01, 100, num=500)
     # TODO: Using `sklearn.linear_model.Ridge`, fit the train set using
@@ -29,8 +33,22 @@ def main(args):
     # For every model, compute the root mean squared error
     # (do not forget `sklearn.metrics.mean_squared_error`) and return the
     # lambda producing lowest test error.
-    best_lambda = None
-    best_rmse = None
+
+    so_far_best_lambda = None
+    so_far_best_rmse = 4200000
+    rmses = []
+    for lam in lambdas:
+        model = sklearn.linear_model.Ridge(alpha=lam)
+        model.fit(x_train, y_train)
+        y_predicted = model.predict(x_test)
+        curr_rmse = sklearn.metrics.mean_squared_error(y_test, y_predicted, squared=False)
+        rmses.append(curr_rmse)
+        if curr_rmse <= so_far_best_rmse:
+            so_far_best_lambda = lam
+            so_far_best_rmse = curr_rmse
+
+    best_lambda = so_far_best_lambda
+    best_rmse = so_far_best_rmse
 
     if args.plot:
         # This block is not required to pass in ReCodEx, however, it is useful

@@ -2,15 +2,17 @@
 import argparse
 
 import numpy as np
+import pandas
 import sklearn.compose
 import sklearn.datasets
 import sklearn.model_selection
 import sklearn.pipeline
 import sklearn.preprocessing
+from pprint import pprint
 
 parser = argparse.ArgumentParser()
 # These arguments will be set appropriately by ReCodEx, even if you change them.
-parser.add_argument("--dataset", default="boston", type=str, help="Standard sklearn dataset to load")
+parser.add_argument("--dataset", default="linnerud", type=str, help="Standard sklearn dataset to load")
 parser.add_argument("--recodex", default=False, action="store_true", help="Running in ReCodEx")
 parser.add_argument("--seed", default=42, type=int, help="Random seed")
 parser.add_argument("--test_size", default=0.5, type=lambda x:int(x) if x.isdigit() else float(x), help="Test set size")
@@ -18,10 +20,23 @@ parser.add_argument("--test_size", default=0.5, type=lambda x:int(x) if x.isdigi
 
 def main(args):
     dataset = getattr(sklearn.datasets, "load_{}".format(args.dataset))()
+    # pprint(dataset.data)
+    # pprint(dataset.target)
 
     # TODO: Split the dataset into a train set and a test set.
     # Use `sklearn.model_selection.train_test_split` method call, passing
     # arguments `test_size=args.test_size, random_state=args.seed`.
+    features = dataset.data
+    target = dataset.target
+    x_train, x_test, y_train, y_test = sklearn.model_selection.train_test_split(features, target, test_size=args.test_size,
+                                                        random_state=args.seed)
+    x_train_pd = pandas.DataFrame(x_train)
+    y_train_pd = pandas.DataFrame(y_train)
+    x_test_pd = pandas.DataFrame(x_test)
+    y_test_pd = pandas.DataFrame(y_test)
+    features_pd = pandas.DataFrame(features)
+    target_pd = pandas.DataFrame(target)
+
 
     # TODO: Process the input columns in the following way:
     #
@@ -39,20 +54,43 @@ def main(args):
     # In the output, there should be first all the one-hot categorical features,
     # and then the real-valued features. To process different dataset columns
     # differently, you can use `sklearn.compose.ColumnTransformer`.
+    """
+    data_pd = pandas.DataFrame(features)
+    categorical = []
+    for (name, data) in data_pd.iteritems():
+        if np.all(data.astype(int) == data, axis=0):
+            categorical.append(name)
+    """
+    x_bitmap = np.all(features_pd.astype(int) == features_pd, axis=0)
+    y_bitmap = np.all(target_pd.astype(int) == target_pd, axis=0)
+    x_bitmap.append(y_bitmap)
+
+    column_transformer = sklearn.compose.ColumnTransformer(transformers=[
+        ('onehot', sklearn.preprocessing.OneHotEncoder(sparse=False, handle_unknown="ignore"),
+         x_bitmap)],
+        remainder=sklearn.preprocessing.StandardScaler())
+
 
     # TODO: Generate polynomial features of order 2 from the current features.
     # If the input values are [a, b, c, d], you should generate
     # [a^2, ab, ac, ad, b^2, bc, bd, c^2, cd, d^2]. You can generate such polynomial
     # features either manually, or using
     # `sklearn.preprocessing.PolynomialFeatures(2, include_bias=False)`.
+    polynomial = sklearn.preprocessing.PolynomialFeatures(2, include_bias=False)
 
     # TODO: You can wrap all the feature processing steps into one transformer
     # by using `sklearn.pipeline.Pipeline`. Although not strictly needed, it is
     # usually comfortable.
+    pipe = sklearn.pipeline.Pipeline([('column_tranform', column_transformer),
+                                      ('poly_features', polynomial)])
+
 
     # TODO: Fit the feature processing steps on the training data.
     # Then transform the training data into `train_data` (you can do both these
     # steps using `fit_transform`), and transform testing data to `test_data`.
+    pipe.fit(x_train_pd)
+    train_data = pipe.transform(x_train_pd)
+    test_data = pipe.transform(x_test_pd)
 
     return train_data, test_data
 

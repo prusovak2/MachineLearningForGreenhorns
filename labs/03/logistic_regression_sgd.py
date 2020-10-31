@@ -28,10 +28,16 @@ def main(args):
         n_samples=args.data_size, n_features=2, n_informative=2, n_redundant=0, random_state=args.seed)
 
     # TODO: Append a constant feature with value 1 to the end of every input data
+    num_rows, num_column = data.shape
+    ones_column = np.ones((num_rows, 1), dtype='int64')
+    data_with_ones = np.append(data, ones_column, axis=1)
 
     # TODO: Split the dataset into a train set and a test set.
     # Use `sklearn.model_selection.train_test_split` method call, passing
     # arguments `test_size=args.test_size, random_state=args.seed`.
+    train_data, test_data, train_target, test_target = sklearn.model_selection.train_test_split(data, target,
+                                                                                test_size=args.test_size,
+                                                                                random_state=args.seed)
 
     # Generate initial linear regression weights
     weights = generator.uniform(size=train_data.shape[1])
@@ -39,9 +45,22 @@ def main(args):
     for iteration in range(args.iterations):
         permutation = generator.permutation(train_data.shape[0])
 
+        batch_counter = 0
+        grad_sum = 0
         # TODO: Process the data in the order of `permutation`.
         # For every `args.batch_size`, average their gradient, and update the weights.
         # You can assume that `args.batch_size` exactly divides `train_data.shape[0]`.
+        for i in permutation:
+            x_i = train_data[i]
+            t_i = train_target[i]
+            batch_counter += 1
+            curr_grad = ((x_i.transpose() @ weights) - t_i) * x_i
+            grad_sum += curr_grad
+            if batch_counter == args.batch_size:
+                grad_avrg = grad_sum / args.batch_size
+                weights = weights - args.learning_rate * grad_avrg
+                grad_sum = 0
+                batch_counter = 0
 
         # TODO: After the SGD iteration, measure the average loss and accuracy for both the
         # train test and the test set. The loss is the average MLE loss (i.e., the

@@ -9,6 +9,7 @@ import sklearn.metrics
 import sklearn.model_selection
 import sklearn.pipeline
 import sklearn.preprocessing
+from pprint import pprint
 
 parser = argparse.ArgumentParser()
 # These arguments will be set appropriately by ReCodEx, even if you change them.
@@ -24,26 +25,38 @@ def main(args):
 
     # If you want to learn about the dataset, uncomment the following line.
     # print(dataset.DESCR)
+    pprint(sklearn.preprocessing.PolynomialFeatures().get_params().keys())
 
     # TODO: Split the dataset into a train set and a test set.
     # Use `sklearn.model_selection.train_test_split` method call, passing
     # arguments `test_size=args.test_size, random_state=args.seed`.
+    x_train, x_test, y_train, y_test = sklearn.model_selection.train_test_split(dataset.data, dataset.target,
+                                                                                test_size=args.test_size,
+                                                                                random_state=args.seed)
 
     # TODO: Create a pipeline, which
     # 1. performs sklearn.preprocessing.MinMaxScaler()
     # 2. performs sklearn.preprocessing.PolynomialFeatures()
     # 3. performs sklearn.linear_model.LogisticRegression(random_state=args.seed)
-    #
+    pipe = sklearn.pipeline.Pipeline([('minMax_scaler', sklearn.preprocessing.MinMaxScaler()),
+                                      ('poly_features', sklearn.preprocessing.PolynomialFeatures()),
+                                      ('regression', sklearn.linear_model.LogisticRegression(random_state=args.seed))])
+
     # Then, using sklearn.model_selection.StratifiedKFold(5), evaluate crossvalidated
     # train performance of all combinations of the the following parameters:
     # - polynomial degree: 1, 2
     # - LogisticRegression regularization C: 0.01, 1, 100
     # - LogisticRegression solver: lbfgs, sag
-    #
+    param_grid = {'poly_features__degree': [1, 2],
+                  'regression__C': [0.01, 1, 100],
+                  'regression__solver': ['lbfgs', 'sag']}
+
     # For the best combination of parameters, compute the test set accuracy.
     #
     # The easiest way is to use `sklearn.model_selection.GridSearchCV`.
-    test_accuracy = None
+    esstimator = sklearn.model_selection.GridSearchCV(pipe, param_grid, cv=5, n_jobs=-1)
+    esstimator.fit(x_train, y_train)
+    test_accuracy = esstimator.score(x_test, y_test)
 
     return test_accuracy
 

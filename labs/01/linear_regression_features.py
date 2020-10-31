@@ -12,6 +12,7 @@ from sklearn.metrics import mean_squared_error
 parser = argparse.ArgumentParser()
 # These arguments will be set appropriately by ReCodEx, even if you change them.
 parser.add_argument("--data_size", default=40, type=int, help="Data size")
+parser.add_argument("--plot", default=False, const=True, nargs="?", type=str, help="Plot the predictions")
 parser.add_argument("--range", default=3, type=int, help="Feature order range")
 parser.add_argument("--recodex", default=False, action="store_true", help="Running in ReCodEx")
 parser.add_argument("--seed", default=42, type=int, help="Random seed")
@@ -50,6 +51,18 @@ def main(args):
         rmse = mean_squared_error(y_test, y_predicted, multioutput='uniform_average', squared=False)
 
         rmses.append(rmse)
+
+        if args.plot:
+            import matplotlib.pyplot as plt
+            if args.plot is not True:
+                if not plt.gcf().get_axes(): plt.figure(figsize=(6.4*3, 4.8*3))
+                plt.subplot(3, 3, 1 + len(plt.gcf().get_axes()))
+            plt.plot(train_data[:, 0], train_target, "go")
+            plt.plot(test_data[:, 0], test_target, "ro")
+            plt.plot(np.linspace(xs[0], xs[-1], num=100),
+                     model.predict(np.stack([np.linspace(xs[0], xs[-1], num=100)**order for order in range(1, order + 1)], axis=1)), "b")
+            if args.plot is True: plt.show()
+            else: plt.savefig(args.plot, transparent=True, bbox_inches="tight")
 
     return rmses
 
